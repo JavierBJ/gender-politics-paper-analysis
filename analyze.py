@@ -16,18 +16,19 @@ def results_to_file(results, names, to, top=50):
     females = sorted(l, key=lambda x: x[1])[:top]
     print('Male predictors:', file=to)
     print('word : coef : odds_ratio', file=to)
-    for (word, value, sup) in males:
-        print(word, ':', value, ':', np.exp(value), ':', sup, file=to)
+    for (word, value) in males:
+        print(word, ':', value, ':', np.exp(value), file=to)
     print('\nFemale predictors:', file=to)
     print('word : -coef : odds_ratio', file=to)
-    for (word, value, sup) in females:
-        print(word, ':', -value, ':', np.exp(-value), ':', sup, file=to)
+    for (word, value) in females:
+        print(word, ':', -value, ':', np.exp(-value), file=to)
 
 
 def train_and_evaluate(X, y, X_test, y_test, model, folds):
     kf = KFold(n_splits=folds)
     results = np.array((X.get_shape()[1],))
-    train_score, val_score = 0
+    train_score = 0
+    val_score = 0
     for train_idx, val_idx in kf.split(X):
         model = model.fit(X[train_idx], y[train_idx])
         tr_preds = model.predict(X[train_idx])
@@ -55,7 +56,7 @@ def train_and_evaluate(X, y, X_test, y_test, model, folds):
 def analyze(path, alg='lasso', alpha=1, kfolds=10, kwr=5000, sw=True):
     # Craft path for outputs from parameters
     out_path = 'out/'
-    expname = path.split('.')[0] + '_' + alg
+    expname = path.split('/')[-1].split('.')[0] + '_' + alg
     if kwr is not None:
         expname += '_rank' + str(kwr)
     if sw:
@@ -68,7 +69,7 @@ def analyze(path, alg='lasso', alpha=1, kfolds=10, kwr=5000, sw=True):
     # Load CSV from path
     tweets_df = pd.read_csv(path, delimiter=';', encoding='utf-8')
     label = tweets_df['gender']
-    tweets_df = tweets_df.drop('gender')
+    tweets_df = tweets_df['tweet']
 
     # Pre-process and feature extraction
     tweets_df, label = text.preprocess(tweets_df, label)
@@ -80,7 +81,7 @@ def analyze(path, alg='lasso', alpha=1, kfolds=10, kwr=5000, sw=True):
     x_test = [' '.join(x) for x in x_test]
     feat_ext = CountVectorizer(encoding='utf-8', token_pattern=' ', ngram_range=(1,1), analyzer='word',
                                max_features=kwr, binary=True)
-    x_train = feat_ext.fit_trasform(x_train)
+    x_train = feat_ext.fit_transform(x_train)
     x_test = feat_ext.transform(x_test)
 
     best_val = 0

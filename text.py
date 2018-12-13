@@ -60,7 +60,7 @@ def preprocess(tweets, label):
     lemmas = []
     labels = []
     tk, sp, umap, mf = setup_freeling()
-    for tw, l in zip(tweets['full_text'], tweets[label]):
+    for tw, l in zip(tweets, label):
         tokens = tk.tokenize(tw)
         tokens = sp.split(tokens)
         tokens = umap.analyze(tokens)
