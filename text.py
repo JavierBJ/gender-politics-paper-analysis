@@ -1,5 +1,6 @@
 import pyfreeling
 import configparser
+from nltk.corpus import stopwords
 
 
 def setup_freeling():
@@ -28,18 +29,47 @@ def setup_freeling():
     return tk, sp, umap, mf
 
 
+def is_proper(t):
+    return t[0:2]=='NP'
+
+
+def is_sw(w):
+    return w.lower() in stopwords.words('spanish')
+
+
+def is_punct(w):
+    from string import punctuation
+    for p in punctuation:
+        w = w.replace(p, '')
+    for n in '0123456789':
+        w = w.replace(n, '')
+    return is_short(w)
+
+
+def is_short(w):
+    import emoji
+    if w.startswith('@') or w.startswith('#') or w.startswith('https://'):
+        return True
+    elif len(w) == 1:
+        return w[0] not in emoji.UNICODE_EMOJI
+    else:
+        return len(w) < 3
+
+
 def preprocess(tweets, label):
-    maxlen=0
-    ls_tokens = []
+    lemmas = []
     labels = []
     tk, sp, umap, mf = setup_freeling()
     for tw, l in zip(tweets['full_text'], tweets[label]):
         tokens = tk.tokenize(tw)
-        if len(tokens)>maxlen:
-            maxlen = len(tokens)
         tokens = sp.split(tokens)
         tokens = umap.analyze(tokens)
         tokens = mf.analyze(tokens)
-        ls_tokens.append([(x.get_form(), x.get_lemma(), x.get_tag()) for sent in tokens for x in sent])
+
+        lemmas.append([x.get_lemma() for sent in tokens for x in sent
+                       if not is_proper(x.get_tag())
+                       and not is_sw(x.get_lemma())
+                       and not is_punct(x.get_lemma())
+                       and not is_short(x.get_lemma())])
         labels.append(l)
-    return ls_tokens, labels
+    return lemmas, labels
